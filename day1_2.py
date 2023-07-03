@@ -2267,25 +2267,25 @@ data = """6471
 16077
 6030
 1807
+
 """
+
 
 elfdata = data.splitlines()
 
-elfidx = 0
 current_calories = 0
-best_candidate = 0
-best_cals = 0
+
+cals = []
 
 for elfdatum in elfdata:
     if len(elfdatum) != 0:
-        cal = int(elfdatum)
-        current_calories += cal
-        if current_calories > best_cals:
-            best_cals = current_calories
-            best_candidate = elfidx
+        current_calories += int(elfdatum)
     else:
-        elfidx += 1
+        cals.append(current_calories)
         current_calories = 0
 
-print(best_candidate)
-print(best_cals)
+cals.sort(reverse=True)
+print(cals[0])
+print(cals[1])
+print(cals[2])
+print(cals[0] + cals[1] + cals[2])
