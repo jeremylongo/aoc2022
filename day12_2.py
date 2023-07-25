@@ -1,3 +1,5 @@
+from collections import deque
+
 data = """Sabqponm
 abcryxxl
 accszExk
@@ -51,11 +53,10 @@ abcccccccaaaaaacccccccccaaaaaaaaaaaaaacccccaaaaaaaaccccccaaaaacaaaaaaaaaaaaaaaaa
 class Node:
     x = 0
     y = 0
+    k = 0
     value = 0
     parent = None
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
+    adjacents = None
 
     def __repr__(self):
         return str(self.x) + '_' + str(self.y)
@@ -63,8 +64,16 @@ class Node:
     def __init__(self, x, y, value = 0, parent = None):
         self.x = x
         self.y = y
+        self.k = Node.GetKey(x, y)
         self.value = value
         self.parent = parent
+
+    @staticmethod
+    def GetKey(x, y):
+        return y * 10000 + x
+
+    def __hash__(self):
+        return self.k
 
 
 class Graph:
@@ -86,60 +95,67 @@ class Graph:
 
     def AddVertex(self, x: int, y: int, value: int):
         v = Node(x, y, value)
-        self.vertices[str(v)] = v
+        self.vertices[v.k] = v
         return v
 
+
     def getNode(self, x, y):
-        key = str(x) + '_' + str(y)
+        key = Node.GetKey(x, y)
         return self.vertices[key]
 
     def getAdjacents(self, v):
-        adjacents = list()
-        limit = v.value + 1
-        if v.y < self.maxy:
-            adjacent = self.getNode(v.x, v.y + 1)
-            if adjacent.value <= limit:
-                adjacents.append(adjacent)
-        if v.x < self.maxx:
-            adjacent = self.getNode(v.x + 1, v.y)
-            if adjacent.value <= limit:
-                adjacents.append(adjacent)
-        if v.y > 0:
-            adjacent = self.getNode(v.x, v.y - 1)
-            if adjacent.value <= limit:
-                adjacents.append(adjacent)
-        if v.x > 0:
-            adjacent = self.getNode(v.x - 1, v.y)
-            if adjacent.value <= limit:
-                adjacents.append(adjacent)
-
-        return adjacents
+        if v.adjacents is None:
+            adjacents = list()
+            limit = v.value + 1
+            if v.y < self.maxy:
+                adjacent = self.vertices[(v.y + 1) * 10000 + v.x]
+                # adjacent = self.getNode(v.x, v.y + 1)
+                if adjacent.value <= limit:
+                    adjacents.append(adjacent)
+            if v.x < self.maxx:
+                # adjacent = self.getNode(v.x + 1, v.y)
+                adjacent = self.vertices[v.x + 1 + v.y * 10000]
+                if adjacent.value <= limit:
+                    adjacents.append(adjacent)
+            if v.y > 0:
+                adjacent = self.vertices[v.x + (v.y - 1) * 10000]
+                # adjacent = self.getNode(v.x, v.y - 1)
+                if adjacent.value <= limit:
+                    adjacents.append(adjacent)
+            if v.x > 0:
+                adjacent = self.vertices[v.x - 1 + v.y * 10000]
+                # adjacent = self.getNode(v.x - 1, v.y)
+                if adjacent.value <= limit:
+                    adjacents.append(adjacent)
+            v.adjacents = adjacents
+            return adjacents
+        else:
+            return v.adjacents
 
     def BreadthFirstSearch(self, startx, starty, endx, endy):
-        startVert = self.getNode(startx, starty)
-        endVert = self.getNode(endx, endy)
+        startVert = self.vertices[startx + starty * 10000]
+        endVert = self.vertices[endx + endy * 10000]
 
-        queue = list()
+        queue = deque()
         visited = dict()
 
-        visited[str(startVert)] = None
+        visited[startVert.k] = None
 
         current = startVert
         while current != endVert:
             adjacents = self.getAdjacents(current)
             for adjacent in adjacents:
-                key = str(adjacent)
-                if not key in visited.keys():
-                    visited[key] = adjacent
+                if adjacent.k not in visited:
+                    visited[adjacent.k] = adjacent
                     adjacent.parent = current
                     queue.append(adjacent)
             if len(queue) == 0:
                 return None
-            current = self.vertices[str(queue.pop(0))]
+            current = self.vertices[queue.popleft().k]
 
         path = list()
         path.insert(0, current)
-        while current != startVert:
+        while current.k != startVert.k:
             current = current.parent
             path.insert(0, current)
 
